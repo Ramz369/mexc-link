@@ -4,24 +4,43 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<title>Redirecting</title>
-<meta http-equiv="refresh" content="0; url=https://043e3205249013.lhr.life">
+<title>mexc-algo</title>
 <style>
-:root { color-scheme: light dark; }
+:root { color-scheme: dark light; }
 body { margin:0; min-height:100vh; display:grid; place-items:center;
-       font:14px ui-monospace,SFMono-Regular,Menlo,monospace;
-       background:#0f1115; color:#c9d1d9; }
-:root:not([data-theme="dark"]) body { background:#f6f7f9; color:#24292f; }
-a { color:inherit; }
-.box { text-align:center; line-height:1.8; }
-.dim { opacity:.55; }
+       font:13px ui-monospace,SFMono-Regular,Menlo,monospace;
+       background:#0b0e13; color:#e4e7eb; }
+.box { text-align:center; line-height:2; }
+.dim { opacity:.5; font-size:12px; }
+a { color:#6ee7a8; }
+.err { color:#f0a0a0; }
 </style>
 </head>
 <body>
 <div class="box">
-  <div>redirecting…</div>
-  <div class="dim">if nothing happens, <a id="l" href="https://043e3205249013.lhr.life">continue</a></div>
+  <div id="s">connecting…</div>
+  <div class="dim" id="d"></div>
 </div>
-<script>location.replace("https://043e3205249013.lhr.life");</script>
+<script>
+const SRC = "https://raw.githubusercontent.com/Ramz369/mexc-link/main/url.txt";
+const s = document.getElementById("s"), d = document.getElementById("d");
+let tries = 0;
+async function go() {
+  tries++;
+  try {
+    const r = await fetch(SRC + "?t=" + Date.now(), { cache: "no-store" });
+    if (!r.ok) throw new Error("status " + r.status);
+    const url = (await r.text()).trim();
+    if (!/^https:\/\/[a-z0-9.-]+$/i.test(url)) throw new Error("bad target");
+    d.innerHTML = 'if nothing happens, <a href="' + url + '">open manually</a>';
+    location.replace(url);
+  } catch (e) {
+    s.innerHTML = '<span class="err">reconnecting…</span>';
+    d.textContent = "attempt " + tries + " · the terminal moves address every few minutes";
+    setTimeout(go, 4000);
+  }
+}
+go();
+</script>
 </body>
 </html>
