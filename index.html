@@ -25,6 +25,17 @@ a { color:#6ee7a8; }
 const SRC = "https://raw.githubusercontent.com/Ramz369/mexc-link/main/url.txt";
 const s = document.getElementById("s"), d = document.getElementById("d");
 let tries = 0;
+
+function alive(url) {
+  return new Promise(resolve => {
+    const ctl = new AbortController();
+    const timer = setTimeout(() => { ctl.abort(); resolve(false); }, 6000);
+    fetch(url, { mode: "no-cors", cache: "no-store", signal: ctl.signal })
+      .then(() => { clearTimeout(timer); resolve(true); })
+      .catch(() => { clearTimeout(timer); resolve(false); });
+  });
+}
+
 async function go() {
   tries++;
   try {
@@ -33,10 +44,11 @@ async function go() {
     const url = (await r.text()).trim();
     if (!/^https:\/\/[a-z0-9.-]+$/i.test(url)) throw new Error("bad target");
     d.innerHTML = 'if nothing happens, <a href="' + url + '">open manually</a>';
-    location.replace(url);
+    if (await alive(url)) { location.replace(url); return; }
+    throw new Error("target not answering");
   } catch (e) {
-    s.innerHTML = '<span class="err">reconnecting…</span>';
-    d.textContent = "attempt " + tries + " · the terminal moves address every few minutes";
+    s.innerHTML = '<span class="err">terminal is moving address, reconnecting…</span>';
+    d.textContent = "attempt " + tries + " · this resolves itself, keep this tab open";
     setTimeout(go, 4000);
   }
 }
