@@ -18,23 +18,25 @@ a { color:#6ee7a8; }
 </head>
 <body>
 <div class="box">
-  <div id="s">connecting…</div>
+  <div id="s">opening the terminal…</div>
   <div class="dim" id="d"></div>
 </div>
 <script>
+// This page deliberately does NOT probe the target before redirecting.
+// The previous version ran a no-cors fetch at the tunnel and redirected only if
+// it resolved. Measured 2026-09-06: that probe failed while the identical fetch,
+// run by hand in the same tab against the same URL, succeeded in 854ms and the
+// terminal was answering in half a second. So the page sat on "reconnecting"
+// while everything behind it was healthy. Its 4s retry also stacked overlapping
+// fetches against one host, past Chrome's per-host connection limit, so once it
+// failed it could not recover on its own.
+// The probe existed to survive hostname rotation, and the tunnel stopped
+// rotating when we moved off localhost.run. A redirect that simply redirects
+// cannot lie: if the terminal really is down, the visitor sees the terminal's
+// own error, which is the truth instead of a spinner that blames the address.
 const SRC = "url.txt";
 const s = document.getElementById("s"), d = document.getElementById("d");
 let tries = 0;
-
-function alive(url) {
-  return new Promise(resolve => {
-    const ctl = new AbortController();
-    const timer = setTimeout(() => { ctl.abort(); resolve(false); }, 6000);
-    fetch(url, { mode: "no-cors", cache: "no-store", signal: ctl.signal })
-      .then(() => { clearTimeout(timer); resolve(true); })
-      .catch(() => { clearTimeout(timer); resolve(false); });
-  });
-}
 
 async function go() {
   tries++;
@@ -43,12 +45,11 @@ async function go() {
     if (!r.ok) throw new Error("status " + r.status);
     const url = (await r.text()).trim();
     if (!/^https:\/\/[a-z0-9.-]+$/i.test(url)) throw new Error("bad target");
-    d.innerHTML = 'if nothing happens, <a href="' + url + '">open manually</a>';
-    if (await alive(url)) { location.replace(url); return; }
-    throw new Error("target not answering");
+    d.innerHTML = 'if nothing happens, <a href="' + url + '">open it manually</a>';
+    location.replace(url);
   } catch (e) {
-    s.innerHTML = '<span class="err">terminal is moving address, reconnecting…</span>';
-    d.textContent = "attempt " + tries + " · this resolves itself, keep this tab open";
+    s.innerHTML = '<span class="err">cannot read the current address</span>';
+    d.textContent = "attempt " + tries + " · retrying, keep this tab open";
     setTimeout(go, 4000);
   }
 }
