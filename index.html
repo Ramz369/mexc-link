@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<meta http-equiv="refresh" content="0; url=https://mexcalgo.serveousercontent.com/?serveo-skip-browser-warning=true">
+<meta name="referrer" content="no-referrer">
 <title>mexc-algo</title>
 <style>
 :root { color-scheme: dark light; }
@@ -18,8 +18,31 @@ a { color:#6ee7a8; }
 </head>
 <body>
 <div class="box">
-  <div>opening the terminal…</div>
-  <div class="dim">if nothing happens, <a href="https://mexcalgo.serveousercontent.com/?serveo-skip-browser-warning=true">open it manually</a></div>
+  <div id="status" role="status">looking up the terminal…</div>
+  <div class="dim">if nothing happens, <a id="open" href="https://mexcalgo.serveousercontent.com/?serveo-skip-browser-warning=true" rel="noreferrer">open it manually</a></div>
 </div>
+<script>
+(async () => {
+  const status = document.getElementById('status');
+  const open = document.getElementById('open');
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+  try {
+    const response = await fetch('./url.txt', { cache: 'no-store', signal: controller.signal });
+    if (!response.ok) throw new Error('lookup failed');
+    const target = new URL((await response.text()).trim());
+    if (target.protocol !== 'https:' || target.username || target.password || target.origin === location.origin) {
+      throw new Error('invalid destination');
+    }
+    open.href = target.href;
+    status.textContent = 'opening the terminal…';
+    location.replace(target.href);
+  } catch (_) {
+    status.textContent = 'Unable to look up the terminal. Reload to retry, or use the link below.';
+  } finally {
+    clearTimeout(timeout);
+  }
+})();
+</script>
 </body>
 </html>
